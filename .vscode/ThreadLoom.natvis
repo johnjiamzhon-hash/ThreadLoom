@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NatVis file for ThreadLoom types.
+  Provides human-readable display in the VS debugger / cppvsdbg.
+-->
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <!-- Task -->
+  <Type Name="ThreadLoom::Task">
+    <DisplayString>Task({name_,s8b}) id={id_} prio={priority_} state={state_}</DisplayString>
+    <Expand>
+      <Item Name="ID">id_</Item>
+      <Item Name="Name">name_</Item>
+      <Item Name="Priority">priority_</Item>
+      <Item Name="State">state_</Item>
+    </Expand>
+  </Type>
+
+  <!-- ThreadPool -->
+  <Type Name="ThreadLoom::ThreadPool">
+    <DisplayString>ThreadPool threads={workers_._Mypair._Myval2._Mylast - workers_._Mypair._Myval2._Myfirst} pending={queue_._Mysize} active={activeCount_}</DisplayString>
+    <Expand>
+      <Item Name="Thread Count">workers_._Mypair._Myval2._Mylast - workers_._Mypair._Myval2._Myfirst</Item>
+      <Item Name="Active">activeCount_</Item>
+      <Item Name="Pending">queue_._Mysize</Item>
+      <Item Name="Stopping">stopping_</Item>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

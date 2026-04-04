@@ -1,0 +1,9 @@
+build/
+build-release/
+.cache/
+*.user
+*.suo
+.vs/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake

@@ -1,0 +1,32 @@
+{
+    "configurations": [
+        {
+            "name": "MSVC 2017 x64",
+            "intelliSenseMode": "windows-msvc-x64",
+            "compilerPath": "D:/VS/2017/Community/VC/Tools/MSVC/14.16.27023/bin/Hostx64/x64/cl.exe",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/include",
+                "D:/VS/2017/Community/VC/Tools/MSVC/14.16.27023/include",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/ucrt",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/um",
+                "C:/Program Files (x86)/Windows Kits/10/Include/10.0.17763.0/shared"
+            ],
+            "defines": [
+                "_WIN32_WINNT=0x0601",
+                "_UNICODE",
+                "UNICODE"
+            ],
+            "cppStandard": "c++17",
+            "cStandard": "c11",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/src",
+                    "${workspaceFolder}/include"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}
