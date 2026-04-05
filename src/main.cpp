@@ -47,7 +47,7 @@ int main()
     std::printf("=== ThreadLoom Scheduler Demo ===\n\n");
 
     // 创建调度器，启动 4 个工作线程
-    Scheduler scheduler(4);
+    Scheduler scheduler(9);
 
     // --- 提交不同优先级的 lambda 函数任务 ---
     // 调度器会按优先级顺序（Critical > High > Normal > Low）调度执行
@@ -71,11 +71,17 @@ int main()
 
     std::printf("Submitted 9 tasks. Waiting for completion...\n\n");
 
+    // 启动调度器开始处理任务
+    scheduler.start();
+
     // 阻塞主线程，直到所有已提交任务执行完毕
     scheduler.waitAll();
 
     std::printf("\n=== All tasks completed. Total: %zu ===\n",
                 scheduler.completedCount());
+
+    std::printf("\nPress Enter to exit...\n");
+    std::getchar();
 
     return 0;
 }

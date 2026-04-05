@@ -52,6 +52,10 @@ namespace ThreadLoom
                         std::function<void()> fn,
                         TaskPriority priority = TaskPriority::Normal);
 
+        // 启动调度线程处理任务（默认构造后处于暂停状态）
+        // 调用此方法后，dispatchLoop 开始从队列取任务并提交给线程池
+        void start();
+
         // 阻塞调用线程，直到优先级队列为空且线程池所有工作线程空闲
         // 注意：waitAll() 期间仍可继续 submit()，新任务会被等待
         void waitAll();
@@ -81,14 +85,14 @@ namespace ThreadLoom
             uint64_t seqNum; // 提交序号，同优先级时数值越小越先执行（FIFO）
             std::unique_ptr<Task> task;
 
-            // greater<> 比较器使 std::priority_queue 变为最大堆
-            // greater(a,b) 即 a>b，返回true说明a大，a浮顶，
-            // 如果seqNum的比较方法和greater相反，则在比较seqNum时选择相反的返回值
-            bool operator>(const PriorityEntry &o) const
+            // 用于 std::priority_queue 的比较操作
+            // priority_queue 是最大堆，所以返回 true 表示左操作数优先级更高
+            // 优先级高的任务（priority 值大）应该返回 true，排在前面
+            bool operator<(const PriorityEntry &o) const
             {
                 if (priority != o.priority)
-                    return priority > o.priority;
-                return seqNum < o.seqNum; // seqNum 小的排在前面
+                    return priority < o.priority;  // priority 大的排在前面（不满足 <）
+                return seqNum > o.seqNum;  // seqNum 小的排在前面（不满足 <）
             }
         };
 
@@ -97,22 +101,17 @@ namespace ThreadLoom
 
         ThreadPool pool_; // 底层工作线程池
 
-        // 优先级队列：使用 greater<> 实现最大堆（priority 高、seqNum 小的元素优先弹出）
-        // 【std::priority_queue + std::greater 协作原理】：
-        //   - PQ 定义使用 std::greater<PriorityEntry> 作为比较器
-        //   - std::greater 会调用 operator> 来判断：第一个元素 > 第二个元素 是否成立
-        //   - 当 operator>(a, b) 返回 true 时，a 被视为"更优先"，在堆中位置更靠前
-        //   - std::priority_queue 默认是最大堆，std::greater 反向此行为，使其成为最小堆
-        //   - 结果：每次 pop() 得到的是同时满足"最高优先级"和"最早提交"的任务
+        // 优先级队列定义：使用默认比较器（operator<）实现最大堆
+        // 每次 pop() 得到的是优先级最高、同优先级下最早提交的任务
         using PQ = std::priority_queue<PriorityEntry,
-                                       std::vector<PriorityEntry>,
-                                       std::greater<PriorityEntry>>;
+                                       std::vector<PriorityEntry>>;
         PQ pq_;                        // 待调度任务队列
         mutable std::mutex pqMutex_;   // 保护 pq_ 的互斥量（submit/dispatchLoop/waitAll 共用）
         std::condition_variable pqCv_; // 用于唤醒 dispatchLoop 和 waitAll
 
         std::thread dispatcher_;                // 专属调度线程，运行 dispatchLoop()
         std::atomic<bool> running_{true};       // false 表示已请求停止
+        std::atomic<bool> paused_{true};        // true 时调度线程处于暂停状态，不处理任务
         std::atomic<uint64_t> seqCounter_{0};   // 全局提交序号，用于 FIFO 排序
         std::atomic<size_t> completedCount_{0}; // 已完成任务计数
     };

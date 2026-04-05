@@ -1,30 +1,7 @@
 {
-    // C/C++ IntelliSense
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "C_Cpp.default.cppStandard": "c++17",
-    "C_Cpp.errorSquiggles": "enabled",
-
-    // CMake
-    "cmake.configureOnOpen": false,
-    "cmake.buildDirectory": "${workspaceFolder}/build",
-    "cmake.generator": "Ninja",
-    "cmake.cmakePath": "E:/CMAKE/bin/cmake.exe",
-
-    // Editor
-    "editor.formatOnSave": true,
-    "editor.tabSize": 4,
-    "editor.insertSpaces": true,
-    "files.encoding": "utf8",
-    "files.eol": "\r\n",
-
-    // File exclusions
-    "files.exclude": {
-        "**/build/**": true,
-        "**/build-release/**": true,
-        "**/.cache/**": true
+    "[cpp]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
     },
-    "search.exclude": {
-        "**/build/**": true,
-        "**/build-release/**": true
-    }
+    "C_Cpp.debugShortcut": true
 }

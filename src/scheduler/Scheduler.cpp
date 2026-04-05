@@ -72,20 +72,28 @@ size_t Scheduler::pendingCount() const {
     return pq_.size();
 }
 
+// 启动调度线程开始处理任务
+void Scheduler::start() {
+    paused_.store(false, std::memory_order_release);
+    pqCv_.notify_all();  // 唤醒可能在等待中的 dispatchLoop
+}
+
 // 调度线程主循环：从优先级队列取任务，提交给线程池执行
 void Scheduler::dispatchLoop() {
     while (true) {
         std::unique_ptr<Task> task;
         {
             std::unique_lock<std::mutex> lock(pqMutex_);
-            // 阻塞等待：直到有任务可调度，或收到停止信号
+            // 阻塞等待：直到满足以下条件之一
+            // 1. 调度器已启动 (paused_ == false) 且队列非空
+            // 2. 收到停止信号 (running_ == false)
             pqCv_.wait(lock, [this] {
-                return !running_.load() || !pq_.empty();
+                return !running_.load() || (!paused_.load() && !pq_.empty());
             });
 
             // 停止且队列为空：退出循环，调度线程正常结束
             if (!running_.load() && pq_.empty()) break;
-            if (pq_.empty()) continue;  // 防御性检查（理论上不会触发）
+            if (pq_.empty() || paused_.load()) continue;  // 队列空或仍在暂停，继续等待
 
             // 从堆顶取出最高优先级任务
             // pq_.top() 返回 const 引用，需要 const_cast 才能 move unique_ptr
@@ -103,6 +111,9 @@ void Scheduler::dispatchLoop() {
             sharedTask->execute();
             completedCount_.fetch_add(1, std::memory_order_relaxed);  // 执行完成，计数+1
         });
+
+        // 等待当前任务执行完成，确保按优先级顺序执行
+        pool_.waitIdle();
     }
 }
 

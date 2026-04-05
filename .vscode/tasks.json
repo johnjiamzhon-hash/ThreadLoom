@@ -1,158 +1,32 @@
 {
     "version": "2.0.0",
     "tasks": [
-        // ── Configure (Debug) ────────────────────────────────────────────────
         {
-            "label": "CMake: Configure (Debug)",
+            "label": "CMake: build",
             "type": "shell",
-            "command": "cmd",
+            "command": "cmake",
             "args": [
-                "/c",
-                "\"D:\\VS\\2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl"
+                "--build",
+                "${workspaceFolder}/build"
             ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "panel": "shared",
-                "clear": true
-            },
-            "problemMatcher": []
-        },
-
-        // ── Configure (Release) ──────────────────────────────────────────────
-        {
-            "label": "CMake: Configure (Release)",
-            "type": "shell",
-            "command": "cmd",
-            "args": [
-                "/c",
-                "\"D:\\VS\\2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cmake -S . -B build-release -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "panel": "shared",
-                "clear": true
-            },
-            "problemMatcher": []
-        },
-
-        // ── Build (Debug) ─────────────────────────────────────────────────────
-        {
-            "label": "CMake: Build (Debug)",
-            "type": "shell",
-            "command": "cmd",
-            "args": [
-                "/c",
-                "\"D:\\VS\\2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cmake --build build --config Debug -- -j4"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "panel": "shared",
-                "clear": false
-            },
-            "problemMatcher": {
-                "owner": "cpp",
-                "fileLocation": ["relative", "${workspaceFolder}"],
-                "pattern": {
-                    "regexp": "^(.*)\\((\\d+)\\):\\s+(warning|error)\\s+C(\\d+):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "severity": 3,
-                    "code": 4,
-                    "message": 5
-                }
-            },
-            "dependsOn": "CMake: Configure (Debug)"
+            "problemMatcher": [
+                "$msCompile"
+            ]
         },
-
-        // ── Build (Release) ───────────────────────────────────────────────────
         {
-            "label": "CMake: Build (Release)",
+            "label": "CMake: configure",
             "type": "shell",
-            "command": "cmd",
+            "command": "cmake",
             "args": [
-                "/c",
-                "\"D:\\VS\\2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat\" x64 && cmake --build build-release --config Release -- -j4"
+                "-B",
+                "${workspaceFolder}/build",
+                "-DCMAKE_BUILD_TYPE=Debug"
             ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "panel": "shared",
-                "clear": false
-            },
-            "problemMatcher": {
-                "owner": "cpp",
-                "fileLocation": ["relative", "${workspaceFolder}"],
-                "pattern": {
-                    "regexp": "^(.*)\\((\\d+)\\):\\s+(warning|error)\\s+C(\\d+):\\s+(.*)$",
-                    "file": 1,
-                    "line": 2,
-                    "severity": 3,
-                    "code": 4,
-                    "message": 5
-                }
-            },
-            "dependsOn": "CMake: Configure (Release)"
-        },
-
-        // ── Clean ─────────────────────────────────────────────────────────────
-        {
-            "label": "CMake: Clean",
-            "type": "shell",
-            "command": "cmd",
-            "args": [
-                "/c",
-                "if exist build rd /s /q build && if exist build-release rd /s /q build-release"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-
-        // ── Run ───────────────────────────────────────────────────────────────
-        {
-            "label": "Run: ThreadLoom",
-            "type": "shell",
-            "command": ".\\build\\bin\\ThreadLoom.exe",
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": "test",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "panel": "shared"
-            },
-            "problemMatcher": [],
-            "dependsOn": "CMake: Build (Debug)"
+            "group": "build"
         }
     ]
 }
