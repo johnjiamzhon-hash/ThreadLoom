@@ -12,8 +12,9 @@
 
 ThreadLoom 提供了一个轻量级、高效的任务调度框架，具有以下核心特性：
 
-- **优先级调度**：支持 Critical（最高）、High、Normal、Low 四个优先级
+- **优先级调度**：支持 Critical（最高）、High、Normal、Low 四个优先级，严格按优先级顺序执行
 - **灵活的任务模型**：支持继承 `Task` 基类和 lambda 函数两种方式
+- **延迟启动**：提交所有任务后调用 `start()` 方法统一启动调度
 - **线程池驱动**：可配置的固定大小工作线程池
 - **安全的取消机制**：原子操作保证的线程安全任务取消
 - **等待机制**：支持 `waitAll()` 阻塞等待所有任务完成
@@ -46,6 +47,26 @@ scheduler.submit(std::make_unique<MyTask>(...));
 - 互斥量保护共享资源
 - 条件变量协调线程间通信
 
+### 核心设计理念
+
+ThreadLoom 采用 **两阶段调度模型**：
+
+**第一阶段：批量提交**
+```cpp
+scheduler.submit(task1);  // Critical
+scheduler.submit(task2);  // High
+scheduler.submit(task3);  // Normal
+scheduler.submit(task4);  // Low
+```
+
+**第二阶段：统一启动**
+```cpp
+scheduler.start();  // 开始按优先级执行
+scheduler.waitAll(); // 等待完成
+```
+
+所有任务在优先级队列中自动排序，dispatcher 线程按优先级逐个取出并执行，每次执行后等待完成，确保 **优先级顺序贯穿整个生命周期**。
+
 ## 🚀 快速开始
 
 ### 系统要求
@@ -69,7 +90,7 @@ cmake --build . --config Release
 ./bin/ThreadLoom
 ```
 
-输出示例：
+输出示例（按优先级顺序执行）：
 ```
 === ThreadLoom Scheduler Demo ===
 
@@ -77,12 +98,13 @@ Submitted 9 tasks. Waiting for completion...
 
 [FnTask] Critical priority #1
 [FnTask] High priority #1
-[Task 8] compute-A  =>  7^2 = 49
+[Task 7] compute-A  =>  7^2 = 49
 [FnTask] Normal priority #1
-[Task 9] compute-B  =>  13^2 = 169
+[FnTask] Normal priority #2
+[Task 8] compute-B  =>  13^2 = 169
 [FnTask] Low priority #1
-[Task 10] compute-C  =>  42^2 = 1764
-...
+[FnTask] Low priority #2
+[Task 9] compute-C  =>  42^2 = 1764
 
 === All tasks completed. Total: 9 ===
 ```
@@ -107,6 +129,9 @@ int main() {
     scheduler.submit("task-2", [] {
         std::printf("执行任务 2\n");
     }, TaskPriority::Normal);
+
+    // 统一启动调度（所有任务已排序，按优先级执行）
+    scheduler.start();
 
     // 等待所有任务完成
     scheduler.waitAll();
@@ -140,6 +165,7 @@ private:
 Scheduler scheduler(4);
 scheduler.submit(std::make_unique<ComputeTask>("compute-A", 7, TaskPriority::High));
 scheduler.submit(std::make_unique<ComputeTask>("compute-B", 13, TaskPriority::Normal));
+scheduler.start();  // 统一启动调度
 scheduler.waitAll();
 ```
 
@@ -180,9 +206,27 @@ scheduler.waitAll();
 
 ### 线程模型
 
-- **主应用线程**：调用 `submit()` 将任务加入优先级队列
-- **分发器线程**：持续从队列取出最高优先级任务，分配给线程池
-- **工作线程池**：执行 `task->execute()`，可并发处理多个任务
+- **主应用线程**：调用 `submit()` 将任务加入优先级队列，调用 `start()` 启动调度
+- **分发器线程**：持续从队列取出最高优先级任务，分配给线程池，等待任务完成后再取下一个
+- **工作线程池**：执行 `task->execute()`
+
+### 优先级顺序保证
+
+Scheduler 采用 **分发器等待机制** 确保严格按优先级顺序执行：
+
+1. 所有任务通过 `submit()` 加入优先级队列（不执行）
+2. 调用 `start()` 启动分发器线程
+3. 分发器从队列取出最高优先级任务，提交给线程池执行
+4. **等待该任务完成**（通过 `pool_.waitIdle()`）
+5. 再取下一个最高优先级任务，循环执行
+
+这样保证了：
+- **Critical 优先级任务先执行完**
+- **然后 High 优先级任务执行**
+- **然后 Normal 优先级任务执行**
+- **最后 Low 优先级任务执行**
+
+同优先级任务仍按提交顺序（FIFO）执行，并利用多线程并发处理。
 
 ## 📦 目录结构
 
@@ -220,6 +264,9 @@ Task::Id submit(std::unique_ptr<Task> task);
 Task::Id submit(std::string name,
                 std::function<void()> fn,
                 TaskPriority priority = TaskPriority::Normal);
+
+// 启动调度器开始处理任务（所有任务已按优先级排序）
+void start();
 
 // 等待所有任务完成
 void waitAll();
@@ -314,12 +361,13 @@ CMakeLists.txt 配置了 MSVC 的以下选项：
 ## 📝 代码示例
 
 完整的演示程序见 `src/main.cpp`，展示了：
-- 9 个不同优先级任务的提交
-- Lambda 函数任务和自定义 ComputeTask
+- 9 个不同优先级任务的统一提交
+- Lambda 函数任务和自定义 ComputeTask 混合使用
+- 调用 `start()` 统一启动所有任务的调度
 - 任务取消检查
 - 等待所有任务完成
 
-运行该程序可观察优先级调度效果。
+运行该程序可观察优先级调度的严格执行顺序：所有 Critical 优先级任务先完成，再执行 High，依此类推。
 
 ## ⚙️ 构建系统
 
